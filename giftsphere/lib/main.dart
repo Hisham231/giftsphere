@@ -1,10 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart'; // 👈 أضفنا هذي عشان نقدر نستخدم kIsWeb
 import 'sign_in_page.dart';
 
-void main() {
-  runApp(const GiftSphereApp());
-}
 
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    if (!kIsWeb) {
+      await Firebase.initializeApp().timeout(const Duration(seconds: 5));
+      print("✅ Firebase initialized!");
+    }
+  } catch (e) {
+    print("⚠️ Firebase skip or error: $e");
+  }
+
+  runApp(const GiftSphereApp()); 
+}
 class GiftSphereApp extends StatelessWidget {
   const GiftSphereApp({super.key});
 
@@ -52,7 +66,6 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo Image
             Container(
               width: 225,
               height: 225,
@@ -63,19 +76,15 @@ class _SplashScreenState extends State<SplashScreen> {
                 'assets/images/logo.png', 
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) {
-            
-                  return Icon(
+                  return const Icon(
                     Icons.card_giftcard,
                     size: 100,
-                    color: const Color.fromARGB(255, 0, 0, 0),
+                    color: Color.fromARGB(255, 0, 0, 0),
                   );
                 },
               ),
             ),
-            
             const SizedBox(height: 40),
-            
-            // App Name
             const Text(
               'GiftSphere',
               textAlign: TextAlign.center,
@@ -87,10 +96,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 letterSpacing: 2,
               ),
             ),
-            
             const SizedBox(height: 20),
-            
-            // Loading indicator
             SizedBox(
               width: 30,
               height: 30,
@@ -105,6 +111,5 @@ class _SplashScreenState extends State<SplashScreen> {
         ),
       ),
     );
-    
   }
 }

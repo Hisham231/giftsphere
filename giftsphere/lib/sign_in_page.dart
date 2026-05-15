@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'api_service.dart';
 import 'otp_verification_page.dart';
+import 'sign_up_page.dart'; 
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -23,46 +24,30 @@ class _SignInPageState extends State<SignInPage> {
   Future<void> _requestOTP() async {
     String phone = _phoneController.text.trim();
 
-    if (phone.isEmpty) {
-      _showError('Please enter your phone number');
+    if (phone.isEmpty || phone.length != 9) {
+      _showError('Please enter a valid 9-digit phone number');
       return;
     }
 
-    if (phone.length != 9) {
-      _showError('Phone number must be 9 digits');
-      return;
-    }
+    setState(() => _isLoading = true);
 
-    String fullPhone = '+966$phone';
+    // استدعاء الباكند
+    final result = await ApiService.requestOTP(phone);
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    final result = await ApiService.requestOTP(fullPhone);
-
-    setState(() {
-      _isLoading = false;
-    });
+    if (!mounted) return; // حماية للـ Context
+    setState(() => _isLoading = false);
 
     if (result['success']) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) =>
-              OTPVerificationPage(phoneNumber: fullPhone),
+          builder: (context) => OTPVerificationPage(
+            phoneNumber: phone,
+            // ✅ التعديل هنا: تمرير كود الديباج ليعرض فوراً
+            initialDebugOtp: result['debug_otp']?.toString(), 
+          ),
         ),
       );
-
-      if (result['debug_otp'] != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text('DEBUG: Your OTP is ${result['debug_otp']}'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
     } else {
       _showError(result['message'] ?? 'Failed to send OTP');
     }
@@ -70,10 +55,7 @@ class _SignInPageState extends State<SignInPage> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -82,138 +64,62 @@ class _SignInPageState extends State<SignInPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 25),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 60),
-
-              /// Logo + App Name
+              
+              /// Logo Section
               Center(
                 child: Column(
                   children: [
                     Image.asset(
-                      'assets/images/logo.png',
-                      height: 90,
-                      fit: BoxFit.contain,
+                      'assets/images/logo.png', 
+                      height: 90, 
+                      errorBuilder: (c, e, s) => const Icon(Icons.card_giftcard, size: 80, color: Color(0xFF648DDB))
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      'GiftSphere',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                        fontFamily: 'Poppins',
-                      ),
-                    ),
+                    const Text('GiftSphere', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, fontFamily: 'Poppins')),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 80),
-
-              /// Title
-              const Text(
-                'Sign In',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1E1E1E),
-                  fontFamily: 'Poppins',
-                ),
-              ),
-
+              const SizedBox(height: 60),
+              const Text('Sign In', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
+              const Text('Enter your phone number to sign in or continue your setup.', style: TextStyle(color: Colors.grey)),
 
-              /// Subtitle
-              const Text(
-                'Enter your phone number to continue',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF545454),
-                  fontFamily: 'Inter',
-                ),
-              ),
+              const SizedBox(height: 35),
 
-              const SizedBox(height: 32),
-
-              /// Phone Label
-              const Text(
-                'Phone Number',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                  fontFamily: 'Inter',
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              /// Phone Input
+              /// Input Phone field
+              const Text('Phone Number', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 10),
               Container(
                 decoration: BoxDecoration(
+                  color: const Color(0xFFF5F6FA),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFE1E1E1),
-                    width: 2,
-                  ),
+                  border: Border.all(color: const Color(0xFFE1E1E1)),
                 ),
                 child: Row(
                   children: [
-                    /// Country Code
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 16),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF5F6FA),
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(10),
-                          bottomLeft: Radius.circular(10),
-                        ),
-                      ),
-                      child: const Text(
-                        '+966',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 15),
+                      child: Text('+966', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
-
-                    /// Divider
-                    Container(
-                      width: 2,
-                      height: 48,
-                      color: const Color(0xFFE1E1E1),
-                    ),
-
-                    /// Phone Field
+                    Container(width: 1, height: 30, color: Colors.grey.shade400),
                     Expanded(
                       child: TextField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
                         maxLength: 9,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Inter',
-                        ),
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         decoration: const InputDecoration(
-                          hintText: '501234567',
+                          hintText: '5xxxxxxxx',
                           counterText: '',
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 15),
                         ),
                       ),
                     ),
@@ -221,9 +127,9 @@ class _SignInPageState extends State<SignInPage> {
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 30),
 
-              /// Continue Button
+              /// Login Button
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -231,33 +137,44 @@ class _SignInPageState extends State<SignInPage> {
                   onPressed: _isLoading ? null : _requestOTP,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF648DDB),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Continue',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
+                  child: _isLoading 
+                    ? const CircularProgressIndicator(color: Colors.white) 
+                    : const Text('Continue', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
               ),
 
-              const Spacer(),
+              const SizedBox(height: 40),
+
+              /// Create Account Section
+              Center(
+                child: Column(
+                  children: [
+                    const Text("Don't have an account?", style: TextStyle(color: Colors.grey)),
+                    const SizedBox(height: 5),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const SignUpPage()),
+                        );
+                      },
+                      child: const Text(
+                        'Create New Account',
+                        style: TextStyle(
+                          color: Color(0xFF648DDB),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
             ],
           ),
         ),

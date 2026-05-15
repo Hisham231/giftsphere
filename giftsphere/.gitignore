@@ -1,4 +1,4 @@
-# Miscellaneous
+rm -rf .git# Miscellaneous
 *.class
 *.log
 *.pyc
